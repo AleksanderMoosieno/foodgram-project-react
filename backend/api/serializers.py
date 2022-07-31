@@ -1,8 +1,8 @@
 from django.contrib.auth.hashers import make_password
-from rest_framework import serializers
 
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag, TagRecipe)
+from rest_framework import serializers
 from users.models import Subscribe, User
 
 
@@ -73,7 +73,6 @@ class UserSerializer(serializers.ModelSerializer):
                 user=request.user,
                 author__id=obj.id
             ).exists()
-            and request.user.is_authenticated
         )
 
 
@@ -95,7 +94,6 @@ class ShoppingCartFavoriteRecipes(metaclass=serializers.SerializerMetaclass):
         return (
             Favorite.objects.filter(user=request.user,
                                     recipe__id=obj.id).exists()
-            and request.user.is_authenticated
         )
 
     def get_is_in_shopping_cart(self, obj):
@@ -105,7 +103,6 @@ class ShoppingCartFavoriteRecipes(metaclass=serializers.SerializerMetaclass):
         return (
             ShoppingCart.objects.filter(user=request.user,
                                         recipe__id=obj.id).exists()
-            and request.user.is_authenticated
         )
 
     def validate_ingredients(self, value):
@@ -125,18 +122,6 @@ class ShoppingCartFavoriteRecipes(metaclass=serializers.SerializerMetaclass):
                     'Продукты не должны повторяться!')
             ingredients_list.append(check_ingredient)
         return value
-
-
-class RecipesCount(metaclass=serializers.SerializerMetaclass):
-    """
-    Класс определения количества рецептов автора.
-    """
-
-    def get_recipes_count(self, obj):
-        """
-        Функция подсчёта количества рецептов автора.
-        """
-        return Recipe.objects.filter(author=obj.author).count()
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -248,8 +233,6 @@ class RecipeSerializerPost(serializers.ModelSerializer,
                 ingredientinrecipe.amount = ingredient['amount']
                 ingredientinrecipe.save()
             else:
-                IngredientInRecipe.objects.filter(recipe=recipe).delete()
-                recipe.delete()
                 raise serializers.ValidationError(
                     'Продукты не могут повторяться в рецепте!')
         return recipe
@@ -281,7 +264,6 @@ class RecipeSerializerPost(serializers.ModelSerializer,
         IngredientInRecipe.objects.filter(recipe=instance).delete()
         instance = self.add_ingredients_and_tags(tags, ingredients, instance)
         super().update(instance, validated_data)
-        instance.save()
         return instance
 
 
@@ -318,7 +300,6 @@ class SubscribeSerializer(serializers.ModelSerializer):
                 user=request.user,
                 author__id=obj.id
             ).exists()
-            and request.user.is_authenticated
         )
 
     def get_recipes(self, obj):

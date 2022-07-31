@@ -5,6 +5,7 @@ from .views import (DownloadShoppingCartViewSet, FavoriteViewSet,
                     IngredientViewSet, RecipeViewSet, ShoppingCartViewSet,
                     SubscribeViewSet, TagViewSet, UserViewSet)
 
+
 app_name = 'api'
 
 router = DefaultRouter()

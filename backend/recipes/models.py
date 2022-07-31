@@ -104,15 +104,18 @@ class IngredientInRecipe(models.Model):
         Ingredient,
         on_delete=models.CASCADE,
         verbose_name='Продукт рецепта',
+        unique=True,
         related_name='recipe_ingredient')
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
+        unique=True,
         related_name='recipe_ingredient')
     amount = models.PositiveIntegerField(
         default=1,
         validators=[MinValueValidator(1), ],
+        unique=True,
         verbose_name='Количество продукта')
 
     class Meta:
@@ -185,10 +188,12 @@ class TagRecipe(models.Model):
     tag = models.ForeignKey(
         Tag,
         on_delete=models.CASCADE,
+        unique=True,
         verbose_name='Теги')
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
+        unique=True,
         verbose_name='Рецепт')
 
     class Meta:
