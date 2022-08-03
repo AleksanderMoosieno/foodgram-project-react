@@ -5,43 +5,7 @@ from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
 from rest_framework import serializers
 from users.models import Subscribe, User
 
-
-class Base64ImageField(serializers.ImageField):
-    """
-    Класс обработки image.
-    """
-
-    def to_internal_value(self, data):
-        import base64
-        import uuid
-
-        from django.core.files.base import ContentFile
-
-        import six
-
-        if isinstance(data, six.string_types):
-            if 'data:' in data and ';base64,' in data:
-                header, data = data.split(';base64,')
-
-            try:
-                decoded_file = base64.b64decode(data)
-            except TypeError:
-                self.fail('invalid_image')
-
-            file_name = str(uuid.uuid4())[:12]
-            file_extension = self.get_file_extension(file_name, decoded_file)
-            complete_file_name = "%s.%s" % (file_name, file_extension, )
-            data = ContentFile(decoded_file, name=complete_file_name)
-
-        return super(Base64ImageField, self).to_internal_value(data)
-
-    def get_file_extension(self, file_name, decoded_file):
-        import imghdr
-
-        extension = imghdr.what(file_name, decoded_file)
-        extension = "jpg" if extension == "jpeg" else extension
-
-        return extension
+from fields import Base64ImageField
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -104,24 +68,6 @@ class ShoppingCartFavoriteRecipes(metaclass=serializers.SerializerMetaclass):
             ShoppingCart.objects.filter(user=request.user,
                                         recipe__id=obj.id).exists()
         )
-
-    def validate_ingredients(self, value):
-        ingredients_list = []
-        ingredients = value
-        for ingredient in ingredients:
-            if ingredient['amount'] < 1:
-                raise serializers.ValidationError(
-                    'Количество должно быть равным или больше 1!')
-            check_id = ingredient['ingredient']['id']
-            check_ingredient = Ingredient.objects.filter(id=check_id)
-            if not check_ingredient.exists():
-                raise serializers.ValidationError(
-                    'Ингредиента нет в базе!')
-            if check_ingredient in ingredients_list:
-                raise serializers.ValidationError(
-                    'Продукты не должны повторяться!')
-            ingredients_list.append(check_ingredient)
-        return value
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -231,27 +177,37 @@ class RecipeSerializerPost(serializers.ModelSerializer,
                     ingredient_id=ingredient['ingredient']['id'],
                     recipe=recipe)
                 ingredientinrecipe.amount = ingredient['amount']
-                ingredientinrecipe.save()
-            else:
-                raise serializers.ValidationError(
-                    'Продукты не могут повторяться в рецепте!')
         return recipe
+
+    def validate_ingredients(self, value):
+        ingredients_list = []
+        ingredients = value
+        for ingredient in ingredients:
+            if ingredient['amount'] < 1:
+                raise serializers.ValidationError(
+                    'Количество должно быть равным или больше 1!')
+            id_to_check = ingredient['ingredient']['id']
+            ingredient_to_check = Ingredient.objects.filter(id=id_to_check)
+            if not ingredient_to_check.exists():
+                raise serializers.ValidationError(
+                    'Данного продукта нет в базе!')
+            if ingredient_to_check in ingredients_list:
+                raise serializers.ValidationError(
+                    'Данные продукты повторяются в рецепте!')
+            ingredients_list.append(ingredient_to_check)
+        return value
 
     def create(self, validated_data):
         """
         Функция создания рецепта.
         """
-        author = validated_data.get('author')
         tags = validated_data.pop('tags')
-        name = validated_data.get('name')
-        image = validated_data.get('image')
-        text = validated_data.get('text')
-        cooking_time = validated_data.get('cooking_time')
-        ingredients = validated_data.pop('recipe_ingredient')
-        recipe = Recipe.objects.create(author=author, name=name,
-                                       image=image, text=text,
-                                       cooking_time=cooking_time,)
-        recipe = self.add_ingredients_and_tags(tags, ingredients, recipe)
+        ingredients = validated_data.pop('ingredients')
+        recipe = Recipe.objects.create(
+            **validated_data,
+            author=self.context.get('request').user
+        )
+        self.add_tags_ingredients_to_recipe(recipe, tags, ingredients)
         return recipe
 
     def update(self, instance, validated_data):

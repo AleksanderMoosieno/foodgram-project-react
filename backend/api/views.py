@@ -3,8 +3,8 @@ from http import HTTPStatus
 from django.db import IntegrityError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-
 from django_filters.rest_framework import DjangoFilterBackend
+
 from rest_framework import permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -49,11 +49,6 @@ class SubscribeViewSet(viewsets.ModelViewSet):
         """
         author_id = self.kwargs.get('author_id')
         author = get_object_or_404(User, id=author_id)
-        if author == request.user:
-            return Response(
-                'Нельзя подписаться на себя',
-                status=HTTPStatus.BAD_REQUEST
-            )
         try:
             Subscribe.objects.create(author=author, user=self.request.user)
         except IntegrityError:
@@ -186,21 +181,18 @@ class DownloadShoppingCartViewSet(APIView):
         user = request.user
         shopping_carts = ShoppingCart.objects.filter(user=user)
         recipes = [cart.recipe for cart in shopping_carts]
-        cart_dict = {}
-        for recipe in recipes:
-            for ingredient in recipe.ingredients.all():
-                amount = get_object_or_404(IngredientInRecipe,
-                                           recipe=recipe,
-                                           ingredient=ingredient).amount
-                if ingredient.name not in cart_dict:
-                    cart_dict[ingredient.name] = amount
-                else:
-                    cart_dict[ingredient.name] += amount
+        cart = {}
+        for ingredient in recipes.ingredients.all():
+            amount = get_object_or_404(IngredientInRecipe, ingredient=ingredient).amount
+            if ingredient.name not in cart:
+                cart[ingredient.name] = amount
+            else:
+                cart[ingredient.name] += amount
         content = ''
-        for item in cart_dict:
+        for item in cart:
             measurement_unit = get_object_or_404(Ingredient,
                                                  name=item).measurement_unit
-            content += f'{item} -- {cart_dict[item]} {measurement_unit}\n'
+            content += f'{item} -- {cart[item]} {measurement_unit}\n'
         response = HttpResponse(content,
                                 content_type='text/plain,charset=utf8')
         response['Content-Disposition'] = 'attachment; filename="cart.txt"'
