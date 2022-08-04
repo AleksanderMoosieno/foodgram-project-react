@@ -1,9 +1,10 @@
-from distutils.util import strtobool
-
 import django_filters
 
-from recipes.models import Recipe
 from rest_framework import filters
+
+from distutils.util import strtobool
+from recipes.models import Recipe
+
 
 CHOICES = (
     ('0', 'False'),
