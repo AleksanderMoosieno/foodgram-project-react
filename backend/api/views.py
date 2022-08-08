@@ -1,26 +1,26 @@
 from http import HTTPStatus
 
-from django.db import IntegrityError
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 
+from rest_framework import status, viewsets
 from rest_framework import permissions, viewsets
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.decorators import action
 
-from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            ShoppingCart, Tag)
+from recipes.models import (Favorite, Ingredient, Recipe,
+                            ShoppingCart, Tag, IngredientInRecipe)
 from users.models import Subscribe, User
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import CustomPagination
-from .permissions import IsAuthorOrReadOnly
+from .permissions import IsAuthorOrReadOnly, IsAuthenticated
 from .serializers import (FavoriteSerializer, IngredientSerializer,
                           RecipeCartSerializer, RecipeSerializer,
                           RecipeSerializerPost, RecipeShortFieldSerializer,
                           ShoppingCartSerializer, SubscribeSerializer,
                           TagSerializer, UserSerializer)
 from .mixins import ListRetriveViewSet
+from .utils import shooping_card
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -40,42 +40,57 @@ class SubscribeViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = CustomPagination
 
-    def get_queryset(self):
-        return Subscribe.objects.filter(user=self.request.user)
+    def subscribe(self, request, id=None):
+        """Подписка на пользователей."""
 
-    def create(self, request, *args, **kwargs):
-        """
-        Создание подписки.
-        """
-        author_id = self.kwargs.get('author_id')
-        author = get_object_or_404(User, id=author_id)
-        try:
-            Subscribe.objects.create(author=author, user=self.request.user)
-        except IntegrityError:
-            return Response(
-                'Вы уже подписаны на данного автора',
-                status=HTTPStatus.BAD_REQUEST
-            )
-        subscription = get_object_or_404(
-            Subscribe,
-            author=author,
-            user=self.request.user
+        user = request.user
+        author = get_object_or_404(User, id=id)
+
+        if user == author:
+            return Response({
+                "errors": "Вы не можете подписываться на себя"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        if Subscribe.objects.filter(user=user, author=author).exists():
+            return Response({
+                "errors": "Вы уже подписаны на пользователя"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        follow = Subscribe.objects.create(user=user, author=author)
+        serializer = SubscribeSerializer(
+            follow, context={"request": request}
         )
-        serializer = SubscribeSerializer(subscription, many=False)
-        return Response(data=serializer.data, status=HTTPStatus.CREATED)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def delete(self, request, *args, **kwargs):
-        """
-        Удаление подписки.
-        """
-        author_id = self.kwargs.get('author_id')
-        author = get_object_or_404(User, id=author_id)
-        get_object_or_404(
-            Subscribe,
-            author=author,
-            user=self.request.user
-        ).delete()
-        return Response(status=HTTPStatus.NO_CONTENT)
+    @subscribe.mapping.delete
+    def del_subscribe(self, request, id=None):
+        """Отписка."""
+        user = request.user
+        author = get_object_or_404(User, id=id)
+        if user == author:
+            return Response({
+                "errors": "Вы не можете отписываться от себя"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        follow = Subscribe.objects.filter(user=user, author=author)
+        if follow.exists():
+            follow.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response({
+            "errors": "Вы уже отписались"
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, permission_classes=[IsAuthenticated])
+    def subscriptions(self, request):
+        """Список подписок."""
+        user = request.user
+        queryset = Subscribe.objects.filter(user=user)
+        pages = self.paginate_queryset(queryset)
+        serializer = SubscribeSerializer(
+            pages,
+            many=True,
+            context={"request": request}
+        )
+        return self.get_paginated_response(serializer.data)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -165,6 +180,24 @@ class FavoriteViewSet(viewsets.ModelViewSet):
         ).delete()
         return Response(status=HTTPStatus.NO_CONTENT)
 
+    def shopping_cart(self, request):
+        final_list = {}
+        ingredients = IngredientInRecipe.objects.filter(
+            recipe__cart__user=request.user).values_list(
+            "ingredient__name", "ingredient__measurement_unit",
+            "amount")
+        for item in ingredients:
+            name = item[0]
+            if name not in final_list:
+                final_list[name] = {
+                    "measurement_unit": item[1],
+                    "amount": item[2]
+                }
+            else:
+                final_list[name]["amount"] += item[2]
+
+        return shooping_card(final_list)
+
 
 class TagViewSet(ListRetriveViewSet):
     """
@@ -174,26 +207,3 @@ class TagViewSet(ListRetriveViewSet):
     serializer_class = TagSerializer
     pagination_class = None
     permission_classes = (permissions.AllowAny, )
-
-
-class DownloadShoppingCartViewSet(APIView):
-    def get(self, request):
-        user = request.user
-        shopping_carts = ShoppingCart.objects.filter(user=user)
-        recipes = [cart.recipe for cart in shopping_carts]
-        cart = {}
-        for ingredient in recipes.ingredients.all():
-            amount = get_object_or_404(IngredientInRecipe, ingredient=ingredient).amount
-            if ingredient.name not in cart:
-                cart[ingredient.name] = amount
-            else:
-                cart[ingredient.name] += amount
-        content = ''
-        for item in cart:
-            measurement_unit = get_object_or_404(Ingredient,
-                                                 name=item).measurement_unit
-            content += f'{item} -- {cart[item]} {measurement_unit}\n'
-        response = HttpResponse(content,
-                                content_type='text/plain,charset=utf8')
-        response['Content-Disposition'] = 'attachment; filename="cart.txt"'
-        return response

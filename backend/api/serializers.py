@@ -1,10 +1,10 @@
 from django.contrib.auth.hashers import make_password
+from django.shortcuts import get_object_or_404
+from rest_framework import serializers
 
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            ShoppingCart, Tag, TagRecipe)
-from rest_framework import serializers
+                            ShoppingCart, Tag)
 from users.models import Subscribe, User
-
 from fields import Base64ImageField
 
 
@@ -162,65 +162,84 @@ class RecipeSerializerPost(serializers.ModelSerializer,
                   'ingredients', 'is_in_shopping_cart', 'tags',
                   'cooking_time', 'is_favorited')
 
-    def add_ingredients_and_tags(self, tags, ingredients, recipe):
-        """
-        Функция добавления тегов и продуктов в рецепт.
-        """
-        for tag in tags:
-            recipe.tags.add(tag)
-            recipe.save()
-        for ingredient in ingredients:
-            if not IngredientInRecipe.objects.filter(
-                    ingredient_id=ingredient['ingredient']['id'],
-                    recipe=recipe).exists():
-                ingredientinrecipe = IngredientInRecipe.objects.create(
-                    ingredient_id=ingredient['ingredient']['id'],
-                    recipe=recipe)
-                ingredientinrecipe.amount = ingredient['amount']
-        return recipe
+    def get_is_in_shopping_cart(self, obj):
+        """Получение информации о нахождении рецепта."""
+        user = self.context.get("request").user
+        if user.is_anonymous:
+            return False
+        return Recipe.objects.filter(cart__user=user, id=obj.id).exists()
 
-    def validate_ingredients(self, value):
-        ingredients_list = []
-        ingredients = value
+    def get_is_favorited(self, obj):
+        """Получение списка изранного."""
+        user = self.context.get("request").user
+        if user.is_anonymous:
+            return False
+        return Recipe.objects.filter(favorites__user=user, id=obj.id).exists()
+
+    def create_ingredients(self, ingredients, recipe):
+        """Получение ингредиентов для рецепта."""
+
         for ingredient in ingredients:
-            if ingredient['amount'] < 1:
-                raise serializers.ValidationError(
-                    'Количество должно быть равным или больше 1!')
-            id_to_check = ingredient['ingredient']['id']
-            ingredient_to_check = Ingredient.objects.filter(id=id_to_check)
-            if not ingredient_to_check.exists():
-                raise serializers.ValidationError(
-                    'Данного продукта нет в базе!')
-            if ingredient_to_check in ingredients_list:
-                raise serializers.ValidationError(
-                    'Данные продукты повторяются в рецепте!')
-            ingredients_list.append(ingredient_to_check)
-        return value
+            IngredientInRecipe.objects.get_or_create(
+                recipe=recipe,
+                ingredient_id=ingredient.get("id"),
+                amount=ingredient.get("amount"),
+            )
 
     def create(self, validated_data):
-        """
-        Функция создания рецепта.
-        """
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(
-            **validated_data,
-            author=self.context.get('request').user
-        )
-        self.add_tags_ingredients_to_recipe(recipe, tags, ingredients)
+        """Создание рецепта."""
+        image = validated_data.pop("image")
+        ingredients_data = validated_data.pop("ingredients")
+        recipe = Recipe.objects.create(image=image, **validated_data)
+        tags_data = self.initial_data.get("tags")
+        recipe.tags.set(tags_data)
+        self.create_ingredients(ingredients_data, recipe)
         return recipe
 
-    def update(self, instance, validated_data):
-        """
-        Функция редактирования рецепта.
-        """
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('recipe_ingredient')
-        TagRecipe.objects.filter(recipe=instance).delete()
-        IngredientInRecipe.objects.filter(recipe=instance).delete()
-        instance = self.add_ingredients_and_tags(tags, ingredients, instance)
-        super().update(instance, validated_data)
-        return instance
+    def update(self, recipe, validated_data):
+        """Функция редактирования рецепта."""
+        ingredients = validated_data.pop("ingredients")
+        recipe.ingredients.clear()
+        tags = self.initial_data.get("tags")
+        self.create_ingredients(ingredients, recipe)
+        recipe.tags.set(tags)
+        return super().update(recipe, validated_data)
+
+    def validate(self, data):
+        """Валидация."""
+        ingredients = self.initial_data.get("ingredients")
+        if not ingredients:
+            raise serializers.ValidationError(
+                {
+                    "ingredients": "Один ингридиент"
+                }
+            )
+        ingredient_list = []
+        for ingredient_item in ingredients:
+            ingredient = get_object_or_404(
+                Ingredient, id=ingredient_item["id"])
+            if ingredient in ingredient_list:
+                raise serializers.ValidationError(
+                    "Ингридиенты должны " "быть уникальными"
+                )
+            ingredient_list.append(ingredient)
+            if int(ingredient_item["amount"]) < 0:
+                raise serializers.ValidationError(
+                    {
+                        "ingredients": (
+                            "Убедитесь, что значение количества ингр. > 0."
+                        )
+                    }
+                )
+        data["ingredients"] = ingredients
+        return data
+
+    def validate_cooking_time(self, cooking_time):
+        """Валидация приготовления."""
+        if int(cooking_time) <= 1:
+            raise serializers.ValidationError(
+                "Минимальное время приготовления - 1 мин.")
+        return cooking_time
 
 
 class SubscribeSerializer(serializers.ModelSerializer):
