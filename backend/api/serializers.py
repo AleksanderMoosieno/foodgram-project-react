@@ -1,11 +1,11 @@
 from django.contrib.auth.hashers import make_password
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from users.models import Subscribe, User
 from fields import Base64ImageField
+from .utils import double_checker
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -205,33 +205,15 @@ class RecipeSerializerPost(serializers.ModelSerializer,
         recipe.tags.set(tags)
         return super().update(recipe, validated_data)
 
+    def to_representation(self, value):
+        serializer = RecipeSerializer(value, context=self.context)
+        return serializer.data
+
     def validate(self, data):
         """Валидация."""
-        ingredients = self.initial_data.get("ingredients")
-        if not ingredients:
-            raise serializers.ValidationError(
-                {
-                    "ingredients": "Один ингридиент"
-                }
-            )
-        ingredient_list = []
-        for ingredient_item in ingredients:
-            ingredient = get_object_or_404(
-                Ingredient, id=ingredient_item["id"])
-            if ingredient in ingredient_list:
-                raise serializers.ValidationError(
-                    "Ингридиенты должны " "быть уникальными"
-                )
-            ingredient_list.append(ingredient)
-            if int(ingredient_item["amount"]) < 0:
-                raise serializers.ValidationError(
-                    {
-                        "ingredients": (
-                            "Убедитесь, что значение количества ингр. > 0."
-                        )
-                    }
-                )
-        data["ingredients"] = ingredients
+        ingredients = data['ingredients']
+        tags = data['tags']
+        double_checker([tags, ingredients])
         return data
 
     def validate_cooking_time(self, cooking_time):

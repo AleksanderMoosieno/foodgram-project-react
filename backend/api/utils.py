@@ -1,7 +1,10 @@
 from django.http import HttpResponse
+
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
+
+from rest_framework import exceptions
 
 
 def shooping_card(y):
@@ -23,3 +26,17 @@ def shooping_card(y):
     page.showPage()
     page.save()
     return response
+
+
+def double_checker(item_list):
+    """Проверяет элементы на повтор"""
+    for item in item_list:
+        if len(item) == 0:
+            raise exceptions.ValidationError(
+                f'{item} должен иметь хотя бы одну позицию!'
+            )
+        for element in item:
+            if item.count(element) > 1:
+                raise exceptions.ValidationError(
+                    f'{element} уже есть в рецепте!'
+                )
