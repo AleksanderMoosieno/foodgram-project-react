@@ -1,5 +1,6 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
@@ -155,6 +156,12 @@ class RecipeSerializerPost(serializers.ModelSerializer,
     image = Base64ImageField(max_length=None, use_url=False,)
     is_in_shopping_cart = serializers.SerializerMethodField()
     is_favorited = serializers.SerializerMethodField()
+    validators = [
+            UniqueTogetherValidator(
+                queryset=Ingredient.objects.all(),
+                fields=['ingredient', 'recipe']
+            )
+        ]
 
     class Meta:
         model = Recipe
