@@ -8,6 +8,7 @@ from .views import (DownloadShoppingCartViewSet, FavoriteViewSet,
 
 app_name = 'api'
 
+
 router = DefaultRouter()
 router.register('users', UserViewSet, basename='users')
 router.register('tags', TagViewSet, basename='tags')
