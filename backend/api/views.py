@@ -185,7 +185,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def shopping_cart(self, request):
         final_list = {}
-        ingredients = IngredientInRecipe.objects.all(
+        ingredients = IngredientInRecipe.objects.annotate(
             recipe__cart__user=request.user).values_list(
             "ingredient__name", "ingredient__measurement_unit",
             "amount")
