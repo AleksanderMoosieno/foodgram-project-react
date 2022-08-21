@@ -1,3 +1,4 @@
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
@@ -185,10 +186,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def shopping_cart(self, request):
         final_list = {}
-        ingredients = IngredientInRecipe.objects.annotate(
+        ingredients = IngredientInRecipe.objects.all(
             recipe__cart__user=request.user).values_list(
             "ingredient__name", "ingredient__measurement_unit",
-            "amount")
+            "amount").annotate(Sum("amount"))
         for item in ingredients:
             name = item[0]
             if name not in final_list:
