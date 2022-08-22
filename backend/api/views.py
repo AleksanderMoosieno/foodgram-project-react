@@ -190,15 +190,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe__cart__user=request.user).values_list(
             "ingredient__name", "ingredient__measurement_unit",
             "amount").annotate(Sum("amount"))
-        for item in ingredients:
-            name = item[0]
-            if name not in final_list:
-                final_list[name] = {
-                    "measurement_unit": item[1],
-                    "amount": item[2]
-                }
-            else:
-                final_list[name]["amount"] += item[2]
+        if not ingredients:
+            return Response({'error': 'Ваша корзина пуста'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         return shooping_card(final_list)
 
