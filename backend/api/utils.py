@@ -12,7 +12,7 @@ def shopping_cart(request):
     """Функция для скачивания карточки покупок."""
     ingredients = IngredientInRecipe.objects.all(
             recipe__cart__user=request.user).values_list(
-            "ingredient__name", "ingredient__measurement_unit").annotate(amount=Sum("amount"))
+            "ingredient__name", "ingredient__measurement_unit").annotate(sum_amount=Sum("amount"))
     pdfmetrics.registerFont(
         TTFont("Fonts", "Fonts.ttf", "UTF-8"))
     response = HttpResponse(content_type="application/pdf")
@@ -25,7 +25,7 @@ def shopping_cart(request):
     height = 750
     for idx, ingr in enumerate(ingredients, start=1):
         page.drawString(75, height, text=(
-            f'{idx}. {ingr["ingredient__name"]} - {ingr["amount"]} '
+            f'{idx}. {ingr["ingredient__name"]} - {ingr["sum_amount"]}'
             f'{ingr["ingredient__measurement_unit"]}'
         ))
         height -= 25

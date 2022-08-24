@@ -188,7 +188,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         final_list = {}
         ingredients = IngredientInRecipe.objects.all(
             recipe__cart__user=request.user).values_list(
-            "ingredient__name", "ingredient__measurement_unit").annotate(amount=Sum("amount"))
+            "ingredient__name", "ingredient__measurement_unit").annotate(sum_amount=Sum("amount"))
         if not ingredients:
             return Response({'error': 'Ваша корзина пуста'},
                             status=status.HTTP_400_BAD_REQUEST)
