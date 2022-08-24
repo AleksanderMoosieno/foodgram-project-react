@@ -24,7 +24,7 @@ def shopping_cart(request):
     page.setFont("Fonts", size=16)
     height = 750
     for idx, ingr in enumerate(ingredients, start=1):
-        page.drawString(60, height, text=(
+        page.drawString(75, height, text=(
             f'{idx}. {ingr["ingredient__name"]} - {ingr["amount"]} '
             f'{ingr["ingredient__measurement_unit"]}'
         ))
