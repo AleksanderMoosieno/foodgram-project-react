@@ -1,11 +1,11 @@
 from django.db.models import Sum
 from django.http import HttpResponse
+
+from recipes.models.ingredient_amount import IngredientInRecipe
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from rest_framework import exceptions
-
-from recipes.models.ingredient_amount import IngredientInRecipe
 
 
 def shopping_cart(request):
