@@ -74,8 +74,8 @@ Foodgram - «Продуктовый помощник». На этом серви
 ```
 
 ### Для входа в админ панель используйте следующие данные
-* root@root.ru
-* 1234
+* 
+*
 
 ### Автор проекта Foodgram:
 * Aleksander Musienko  https://github.com/AleksanderMoosieno
