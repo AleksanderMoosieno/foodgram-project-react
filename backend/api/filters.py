@@ -1,7 +1,8 @@
 from distutils.util import strtobool
 
-from django_filters import rest_framework as filters
+import django_filters
 from recipes.models import Recipe
+from rest_framework import filters
 
 CHOICES = (
     ('0', 'False'),
@@ -9,17 +10,17 @@ CHOICES = (
 )
 
 
-class RecipeFilter(filters.FilterSet):
+class RecipeFilter(django_filters.FilterSet):
 
-    author = filters.CharFilter(field_name='author__id')
-    tags = filters.AllValuesMultipleFilter(field_name='tags__slug')
-    is_favorited = filters.TypedChoiceFilter(
+    author = django_filters.CharFilter(field_name='author__id')
+    tags = django_filters.AllValuesMultipleFilter(field_name='tags__slug')
+    is_favorited = django_filters.TypedChoiceFilter(
         choices=CHOICES,
         coerce=strtobool,
         method='get_is_favorited'
     )
 
-    is_in_shopping_cart = filters.TypedChoiceFilter(
+    is_in_shopping_cart = django_filters.TypedChoiceFilter(
         choices=CHOICES,
         coerce=strtobool,
         method='get_is_in_shopping_cart'

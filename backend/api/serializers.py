@@ -1,12 +1,12 @@
 from django.contrib.auth.hashers import make_password
 
-from fields import Base64ImageField
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from users.models import Subscribe, User
 
+from .fields import Base64ImageField
 from .utils import double_checker
 
 
