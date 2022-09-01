@@ -1,6 +1,5 @@
-from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import UniqueConstraint
+from django.core.validators import MinValueValidator
 
 from users.models import User
 
@@ -105,25 +104,19 @@ class IngredientInRecipe(models.Model):
         Ingredient,
         on_delete=models.CASCADE,
         verbose_name='Продукт рецепта',
-        unique=True,
         related_name='recipe_ingredient')
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
-        unique=True,
         related_name='recipe_ingredient')
     amount = models.PositiveIntegerField(
         default=1,
         validators=[MinValueValidator(1), ],
-        unique=True,
         verbose_name='Количество продукта')
 
     class Meta:
-        constraints = [UniqueConstraint(fields=['ingredient', 'recipe'],
-                       name='unique_ingredient_in_recipe')]
-        verbose_name = 'Ингридиент'
-        verbose_name_plural = 'Ингридиенты'
+        verbose_name = 'Продукты в рецепте'
 
     def __str__(self):
         return f'{self.ingredient} {self.recipe}'
@@ -192,19 +185,14 @@ class TagRecipe(models.Model):
     tag = models.ForeignKey(
         Tag,
         on_delete=models.CASCADE,
-        unique=True,
         verbose_name='Теги')
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        unique=True,
         verbose_name='Рецепт')
 
     class Meta:
-        constraints = [UniqueConstraint(fields=['tag', 'recipe'],
-                       name='unique_recipe_tag')]
         verbose_name = 'Теги рецепта'
-        verbose_name_plural = 'Теги'
 
     def __str__(self):
         return f'{self.tag} {self.recipe}'
