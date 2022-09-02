@@ -1,8 +1,8 @@
 from django.contrib.auth.hashers import make_password
-from rest_framework import serializers
 
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag, TagRecipe)
+from rest_framework import serializers
 from users.models import Subscribe, User
 
 
