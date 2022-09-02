@@ -264,7 +264,7 @@ class RecipeSerializerPost(serializers.ModelSerializer,
         image = validated_data.get('image')
         text = validated_data.get('text')
         cooking_time = validated_data.get('cooking_time')
-        ingredients = validated_data.get('ingredients')
+        ingredients = validated_data.get('recipe_ingredient')
         recipe = Recipe.objects.create(author=author, name=name,
                                        image=image, text=text,
                                        cooking_time=cooking_time,)
@@ -276,7 +276,7 @@ class RecipeSerializerPost(serializers.ModelSerializer,
         Функция редактирования рецепта.
         """
         tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients'['id'])
+        ingredients = validated_data.pop('recipe_ingredient')
         TagRecipe.objects.filter(recipe=instance).delete()
         IngredientInRecipe.objects.filter(recipe=instance).delete()
         instance = self.add_ingredients_and_tags(tags, ingredients, instance)
