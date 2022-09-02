@@ -1,5 +1,10 @@
-from django.contrib.auth.hashers import make_password
+import base64
+import uuid
 
+from django.contrib.auth.hashers import make_password
+from django.core.files.base import ContentFile
+
+import six
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag, TagRecipe)
 from rest_framework import serializers
@@ -12,13 +17,6 @@ class Base64ImageField(serializers.ImageField):
     """
 
     def to_internal_value(self, data):
-        import base64
-        import uuid
-
-        from django.core.files.base import ContentFile
-
-        import six
-
         if isinstance(data, six.string_types):
             if 'data:' in data and ';base64,' in data:
                 header, data = data.split(';base64,')
