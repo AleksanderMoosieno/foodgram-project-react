@@ -11,7 +11,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', default='123')
 
 DEBUG = True
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', default='localhost').split()
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', default='127.0.0.1').split()
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -79,7 +79,7 @@ DATABASES = {
         ),
         'HOST': os.getenv(
             'DB_HOST',
-            default='db'
+            default='localhost'
         ),
         'PORT': os.getenv(
             'DB_PORT',
