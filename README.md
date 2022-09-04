@@ -73,7 +73,7 @@ Foodgram - «Продуктовый помощник». На этом серви
 * docker-compose exec backend python manage.py dumpdata > fixtures.json
 ```
 
-### Для входа в админ панель используйте следующие данные
+
 ***
 
 ### Автор проекта Foodgram:
