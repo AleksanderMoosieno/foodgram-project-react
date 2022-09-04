@@ -80,3 +80,4 @@ Foodgram - «Продуктовый помощник». На этом серви
 ***
 * Aleksander Musienko  https://github.com/AleksanderMoosieno
 
+Сайт доступен по ссылке http://84.201.137.139/
