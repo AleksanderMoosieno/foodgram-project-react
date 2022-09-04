@@ -77,5 +77,6 @@ Foodgram - «Продуктовый помощник». На этом серви
 ***
 
 ### Автор проекта Foodgram:
+***
 * Aleksander Musienko  https://github.com/AleksanderMoosieno
 
