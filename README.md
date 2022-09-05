@@ -73,8 +73,8 @@ Foodgram - «Продуктовый помощник». На этом серви
 * docker-compose exec backend python manage.py dumpdata > fixtures.json
 ```
 
-
 ### Автор проекта Foodgram:
 ***
 * Aleksander Musienko  https://github.com/AleksanderMoosieno
 
+Сайт доступен по ссылке http://84.201.137.139/
