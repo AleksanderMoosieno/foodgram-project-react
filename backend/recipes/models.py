@@ -117,6 +117,12 @@ class IngredientInRecipe(models.Model):
 
     class Meta:
         verbose_name = 'Продукты в рецепте'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['ingredient', 'recipe'],
+                name="unique_ingredient_recipe"
+            ),
+        ]
 
     def __str__(self):
         return f'{self.ingredient} {self.recipe}'
@@ -193,6 +199,12 @@ class TagRecipe(models.Model):
 
     class Meta:
         verbose_name = 'Теги рецепта'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tag', 'recipe'],
+                name="unique_tag_recipe"
+            ),
+        ]
 
     def __str__(self):
         return f'{self.tag} {self.recipe}'

@@ -3,15 +3,15 @@ from http import HTTPStatus
 from django.db import IntegrityError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-
 from django_filters.rest_framework import DjangoFilterBackend
-from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            ShoppingCart, Tag)
+
 from rest_framework import permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from users.models import Subscribe, User
 
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
+                            ShoppingCart, Tag)
+from users.models import Subscribe, User
 from .filters import IngredientFilter, RecipeFilter
 from .mixins import ListRetriveViewSet
 from .pagination import CustomPagination
@@ -21,6 +21,7 @@ from .serializers import (FavoriteSerializer, IngredientSerializer,
                           RecipeSerializerPost, RecipeShortFieldSerializer,
                           ShoppingCartSerializer, SubscribeSerializer,
                           TagSerializer, UserSerializer)
+from api.mixins import CreateFavouriteShoppingCartMixin
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -121,20 +122,15 @@ class IngredientViewSet(ListRetriveViewSet):
     search_fields = ['^name', ]
 
 
-class ShoppingCartViewSet(viewsets.ModelViewSet):
+class ShoppingCartViewSet(CreateFavouriteShoppingCartMixin, viewsets.ModelViewSet):
     """
     Обработка модели корзины.
     """
     serializer_class = ShoppingCartSerializer
     queryset = ShoppingCart.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
-
-    def create(self, request, *args, **kwargs):
-        recipe_id = self.kwargs.get('recipe_id')
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        ShoppingCart.objects.create(user=self.request.user, recipe=recipe)
-        serializer = RecipeCartSerializer(recipe, many=False)
-        return Response(data=serializer.data, status=HTTPStatus.CREATED)
+    model_class = ShoppingCart
+    create_serializer = RecipeCartSerializer
 
     def delete(self, request, *args, **kwargs):
         recipe_id = self.kwargs.get('recipe_id')
@@ -147,18 +143,13 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
         return Response(status=HTTPStatus.NO_CONTENT)
 
 
-class FavoriteViewSet(viewsets.ModelViewSet):
+class FavoriteViewSet(CreateFavouriteShoppingCartMixin, viewsets.ModelViewSet):
     queryset = Favorite.objects.all()
     serializer_class = FavoriteSerializer
     permission_classes = (permissions.IsAuthenticated,)
     http_method_names = ('post', 'delete')
-
-    def create(self, request, *args, **kwargs):
-        recipe_id = self.kwargs.get('recipe_id')
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        Favorite.objects.create(user=self.request.user, recipe=recipe)
-        serializer = RecipeShortFieldSerializer(recipe, many=False)
-        return Response(data=serializer.data, status=HTTPStatus.CREATED)
+    model_class = Favorite
+    create_serializer = RecipeShortFieldSerializer
 
     def delete(self, request, *args, **kwargs):
         recipe_id = self.kwargs.get('recipe_id')
@@ -185,22 +176,23 @@ class DownloadShoppingCartViewSet(APIView):
     def get(self, request):
         user = request.user
         shopping_carts = ShoppingCart.objects.filter(user=user)
-        recipes = [cart.recipe for cart in shopping_carts]
-        cart_dict = {}
-        for recipe in recipes:
-            for ingredient in recipe.ingredients.all():
-                amount = get_object_or_404(IngredientInRecipe,
-                                           recipe=recipe,
-                                           ingredient=ingredient).amount
-                if ingredient.name not in cart_dict:
-                    cart_dict[ingredient.name] = amount
+        cart_container = {}
+        for item in shopping_carts:
+            ingredients = IngredientInRecipe.objects\
+                .filter(recipe=item.recipe)\
+                .values_list("ingredient", "amount")
+            for k in range(ingredients.count()):
+                cur_ingredient = ingredients[k][0]
+                ingredients_amount = ingredients[k][1]
+                if cur_ingredient.name not in cart_container:
+                    cart_container[cur_ingredient.name] = ingredients_amount
                 else:
-                    cart_dict[ingredient.name] += amount
+                    cart_container[cur_ingredient.name] += ingredients_amount
         content = ''
-        for item in cart_dict:
+        for item in cart_container:
             measurement_unit = get_object_or_404(Ingredient,
                                                  name=item).measurement_unit
-            content += f'{item} -- {cart_dict[item]} {measurement_unit}\n'
+            content += f'{item} -- {cart_container[item]} {measurement_unit}\n'
         response = HttpResponse(content,
                                 content_type='text/plain,charset=utf8')
         response['Content-Disposition'] = 'attachment; filename="cart.txt"'

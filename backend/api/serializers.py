@@ -1,10 +1,11 @@
 from django.contrib.auth.hashers import make_password
 
+from rest_framework import serializers
+
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag, TagRecipe)
-from rest_framework import serializers
 from users.models import Subscribe, User
-from fields import Base64ImageField
+from .fields import Base64ImageField
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -70,24 +71,6 @@ class ShoppingCartFavoriteRecipes(metaclass=serializers.SerializerMetaclass):
                                         recipe__id=obj.id).exists()
             and request.user.is_authenticated
         )
-
-    def validate_ingredients(self, value):
-        ingredients_list = []
-        ingredients = value
-        for ingredient in ingredients:
-            if ingredient['amount'] < 1:
-                raise serializers.ValidationError(
-                    'Количество должно быть равным или больше 1!')
-            check_id = ingredient['ingredient']['id']
-            check_ingredient = Ingredient.objects.filter(id=check_id)
-            if not check_ingredient.exists():
-                raise serializers.ValidationError(
-                    'Ингредиента нет в базе!')
-            if check_ingredient in ingredients_list:
-                raise serializers.ValidationError(
-                    'Продукты не должны повторяться!')
-            ingredients_list.append(check_ingredient)
-        return value
 
 
 class RecipesCount(metaclass=serializers.SerializerMetaclass):
@@ -200,37 +183,24 @@ class RecipeSerializerPost(serializers.ModelSerializer,
         """
         for tag in tags:
             recipe.tags.add(tag)
-            recipe.save()
         for ingredient in ingredients:
             if not IngredientInRecipe.objects.filter(
                     ingredient_id=ingredient['ingredient']['id'],
                     recipe=recipe).exists():
-                ingredientinrecipe = IngredientInRecipe.objects.create(
+                IngredientInRecipe.objects.create(
                     ingredient_id=ingredient['ingredient']['id'],
-                    recipe=recipe)
-                ingredientinrecipe.amount = ingredient['amount']
-                ingredientinrecipe.save()
-            else:
-                IngredientInRecipe.objects.filter(recipe=recipe).delete()
-                recipe.delete()
-                raise serializers.ValidationError(
-                    'Продукты не могут повторяться в рецепте!')
+                    recipe=recipe,
+                    amount=ingredient['amount']
+                )
         return recipe
 
     def create(self, validated_data):
         """
         Функция создания рецепта.
         """
-        author = validated_data.get('author')
         tags = validated_data.pop('tags')
-        name = validated_data.get('name')
-        image = validated_data.get('image')
-        text = validated_data.get('text')
-        cooking_time = validated_data.get('cooking_time')
         ingredients = validated_data.get('recipe_ingredient')
-        recipe = Recipe.objects.create(author=author, name=name,
-                                       image=image, text=text,
-                                       cooking_time=cooking_time,)
+        recipe = Recipe.objects.create(**validated_data)
         recipe = self.add_ingredients_and_tags(tags, ingredients, recipe)
         return recipe
 
@@ -244,7 +214,6 @@ class RecipeSerializerPost(serializers.ModelSerializer,
         IngredientInRecipe.objects.filter(recipe=instance).delete()
         instance = self.add_ingredients_and_tags(tags, ingredients, instance)
         super().update(instance, validated_data)
-        instance.save()
         return instance
 
 
