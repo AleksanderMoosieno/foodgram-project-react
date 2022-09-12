@@ -178,9 +178,12 @@ class DownloadShoppingCartViewSet(APIView):
         shopping_carts = ShoppingCart.objects.filter(user=user)
         cart_container = {}
         for item in shopping_carts:
-            ingredients = IngredientInRecipe.objects\
-                .filter(recipe=item.recipe)\
-                .values_list("ingredient", "amount")
+            ingredients = IngredientInRecipe.objects.filter(
+                recipe=item.recipe
+            ).values_list(
+                    "ingredient",
+                    "amount"
+                )
             for k in range(ingredients.count()):
                 cur_ingredient = ingredients[k][0]
                 ingredients_amount = ingredients[k][1]
