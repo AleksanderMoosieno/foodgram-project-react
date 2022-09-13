@@ -1,5 +1,4 @@
 from django.contrib.auth.hashers import make_password
-
 from rest_framework import serializers
 
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
