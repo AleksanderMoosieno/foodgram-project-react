@@ -1,10 +1,10 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 
+from .fields import Base64ImageField
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag, TagRecipe)
 from users.models import Subscribe, User
-from .fields import Base64ImageField
 
 
 class UserSerializer(serializers.ModelSerializer):

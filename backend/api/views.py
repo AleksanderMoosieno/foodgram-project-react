@@ -1,4 +1,5 @@
 from http import HTTPStatus
+
 from django.db import IntegrityError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -7,9 +8,6 @@ from rest_framework import permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            ShoppingCart, Tag)
-from users.models import Subscribe, User
 from .filters import IngredientFilter, RecipeFilter
 from .mixins import ListRetriveViewSet
 from .pagination import CustomPagination
@@ -20,6 +18,9 @@ from .serializers import (FavoriteSerializer, IngredientSerializer,
                           ShoppingCartSerializer, SubscribeSerializer,
                           TagSerializer, UserSerializer)
 from api.mixins import CreateFavouriteShoppingCartMixin
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
+                            ShoppingCart, Tag)
+from users.models import Subscribe, User
 
 
 class UserViewSet(viewsets.ModelViewSet):
