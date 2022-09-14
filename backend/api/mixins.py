@@ -37,4 +37,3 @@ class CreateFavouriteShoppingCartMixin:
             data=serializer.data,
             status=status.HTTP_201_CREATED
         )
-
