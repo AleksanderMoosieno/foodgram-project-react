@@ -16,7 +16,7 @@ services:
       - ./.env
 
   backend:
-    image: hulkluck/foodgram_backend:latest
+    image: fedokanez/foodgram_backend:latest
     restart: always
     volumes:
       - static_value:/app/static/
@@ -27,7 +27,7 @@ services:
       - ./.env
 
   frontend:
-    image: hulkluck/foodgram_frontend:latest
+    image: fedokanez/foodgram_frontend:latest
     volumes:
       - ../frontend/:/app/result_build/
     

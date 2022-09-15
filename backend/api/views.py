@@ -186,9 +186,9 @@ class DownloadShoppingCartViewSet(APIView):
 
         content = ''
         for item in shopping_card_ingredients:
-            content += f'{item["ingredient__name"]} \
--- {item["ingredients_number"]} {item["ingredient__measurement_unit"]}\n'
-
+            content += (f'{item["ingredient__name"]}'
+                        f' -- {item["ingredients_number"]}'
+                        f' {item["ingredient__measurement_unit"]}\n')
         response = HttpResponse(
             content,
             content_type='text/plain,charset=utf8'
