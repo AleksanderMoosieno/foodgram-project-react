@@ -37,3 +37,24 @@ class CreateFavouriteShoppingCartMixin:
             data=serializer.data,
             status=status.HTTP_201_CREATED
         )
+
+
+class DeleteShoppingCartFavoriteMixin:
+    model_class = None
+
+    def delete(self, request, *args, **kwargs):
+        if not self.model_class:
+            return Response(
+                data={
+                    "response": "Provide model class"
+                },
+                status=status.HTTP_405_METHOD_NOT_ALLOWED
+            )
+        recipe_id = self.kwargs.get('recipe_id')
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        get_object_or_404(
+            self.model_class,
+            user=self.request.user,
+            recipe=recipe
+        ).delete()
+        return Response(status=status.HTTP_200_OK)

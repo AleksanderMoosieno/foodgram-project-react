@@ -176,6 +176,24 @@ class RecipeSerializerPost(serializers.ModelSerializer,
                   'ingredients', 'is_in_shopping_cart', 'tags',
                   'cooking_time', 'is_favorited')
 
+    def validate_ingredients(self, value):
+        ingredients_list = []
+        ingredients = value
+        for ingredient in ingredients:
+            if ingredient['amount'] < 1:
+                raise serializers.ValidationError(
+                    'Количество должно быть равным или больше 1!')
+            check_id = ingredient['ingredient']['id']
+            check_ingredient = Ingredient.objects.filter(id=check_id)
+            if not check_ingredient.exists():
+                raise serializers.ValidationError(
+                    'Ингредиента нет в базе!')
+            if check_ingredient in ingredients_list:
+                raise serializers.ValidationError(
+                    'Продукты не должны повторяться!')
+            ingredients_list.append(check_ingredient)
+        return value
+
     def add_ingredients_and_tags(self, tags, ingredients, recipe):
         """
         Функция добавления тегов и продуктов в рецепт.
