@@ -10,7 +10,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .filters import IngredientFilter, RecipeFilter
-from .mixins import ListRetriveViewSet
 from .pagination import CustomPagination
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (FavoriteSerializer, IngredientSerializer,
@@ -22,7 +21,7 @@ from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from users.models import Subscribe, User
 from api.mixins import (CreateFavouriteShoppingCartMixin,
-                        DeleteShoppingCartFavoriteMixin)
+                        DeleteShoppingCartFavoriteMixin, ListRetriveViewSet)
 
 
 class UserViewSet(viewsets.ModelViewSet):
