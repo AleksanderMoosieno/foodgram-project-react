@@ -216,7 +216,7 @@ class RecipeSerializerPost(serializers.ModelSerializer,
         Функция создания рецепта.
         """
         tags = validated_data.pop('tags')
-        ingredients = validated_data.get('recipe_ingredient')
+        ingredients = validated_data.pop('recipe_ingredient')
         recipe = Recipe.objects.create(**validated_data)
         recipe = self.add_ingredients_and_tags(tags, ingredients, recipe)
         return recipe
