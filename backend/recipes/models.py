@@ -170,7 +170,7 @@ class Favorite(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         verbose_name='Рецепт',
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         related_name='favoriterecipe',
     )
 
